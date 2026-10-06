@@ -78,7 +78,7 @@ export function ResearcherDashboard() {
           label="Track"
           value={RESEARCH_STATUS_LABEL[d.research_status]}
           hint={d.learning ? `${d.learning.name} · ${d.learning.progress_percent}%` : undefined}
-          href={d.learning ? "/learning" : undefined}
+          href={d.learning ? "/my-work#learning" : undefined}
         />
       </div>
 

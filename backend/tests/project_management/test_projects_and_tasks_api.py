@@ -97,9 +97,19 @@ def test_researcher_can_move_own_task_through_statuses(client, pm, researcher):
     task = _create_task(client, pm, project["project_id"], assignee_user_id=str(researcher.user_id))
     url = f"/api/v1/tasks/{task['task_id']}"
     assert client.patch(url, json={"status": "IN_PROGRESS"}, headers=auth(researcher)).json()["status"] == "IN_PROGRESS"
-    done = client.patch(url, json={"status": "COMPLETED"}, headers=auth(researcher)).json()
+    assert client.patch(url, json={"status": "BLOCKED"}, headers=auth(researcher)).json()["status"] == "BLOCKED"
+
+
+def test_only_pms_complete_or_reopen_tasks(client, pm, researcher):
+    project = _create_project(client, pm)
+    task = _create_task(client, pm, project["project_id"], assignee_user_id=str(researcher.user_id))
+    url = f"/api/v1/tasks/{task['task_id']}"
+    r = client.patch(url, json={"status": "COMPLETED"}, headers=auth(researcher))
+    assert r.status_code == 403 and "project managers" in r.json()["detail"]
+    done = client.patch(url, json={"status": "COMPLETED"}, headers=auth(pm)).json()
     assert done["status"] == "COMPLETED" and done["completed_at"] is not None
-    reopened = client.patch(url, json={"status": "TODO"}, headers=auth(researcher)).json()
+    assert client.patch(url, json={"status": "TODO"}, headers=auth(researcher)).status_code == 403
+    reopened = client.patch(url, json={"status": "TODO"}, headers=auth(pm)).json()
     assert reopened["completed_at"] is None
 
 

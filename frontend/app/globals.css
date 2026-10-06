@@ -773,3 +773,5 @@ input[type="checkbox"] { border-radius: 4px; }
   .member-hours-list li { grid-template-columns: minmax(0, 1fr) auto; }
   .member-hours-list .hours-meter { grid-column: 1 / -1; grid-row: 2; }
 }
+.status-check.locked { cursor: default; }
+.my-learning { margin-top: 8px; }

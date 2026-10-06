@@ -450,6 +450,9 @@ def update_task(db: Session, actor: User, task_id: uuid.UUID, data: TaskUpdate) 
         forbidden = set(changes) - ASSIGNEE_EDITABLE_FIELDS
         if forbidden:
             raise PermissionDeniedError(f"Only project managers can change: {', '.join(sorted(forbidden))}")
+        new_status = changes.get("status")
+        if new_status is not None and new_status != task.status and TaskStatus.COMPLETED in (new_status, task.status):
+            raise PermissionDeniedError("Only project managers can mark a task completed or reopen it")
 
     for required in ("title", "project_id", "status", "priority", "required_skills"):
         if required in changes and changes[required] is None:

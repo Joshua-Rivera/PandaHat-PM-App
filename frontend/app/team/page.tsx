@@ -41,6 +41,9 @@ function Team() {
         description="Researchers, their track and commitment tags, projects and capacity."
         actions={
           <>
+            <Link href="/learning" className="btn">
+              <Icon name="book" size={14} /> Learning paths
+            </Link>
             <Link href="/team-availability" className="btn">
               <Icon name="calendar" /> Availability
             </Link>

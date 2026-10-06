@@ -6,6 +6,7 @@ import type { Task, TaskStatus } from "@/lib/api/types";
 import { formatDue, formatHours, TASK_STATUS_LABEL, TASK_STATUSES } from "@/lib/format";
 import { useUpdateTask } from "@/lib/queries";
 
+import { useSession } from "@/components/shell/Session";
 import { Icon } from "@/components/ui/Icon";
 import { PriorityBadge, StatusBadge } from "@/components/ui/Primitives";
 import { useToast } from "@/components/ui/Toast";
@@ -19,6 +20,7 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
 };
 
 export function TaskStatusControl({ task, compact = false }: { task: Task; compact?: boolean }) {
+  const { me } = useSession();
   const update = useUpdateTask();
   const toast = useToast();
   const change = (status: TaskStatus) =>
@@ -31,6 +33,15 @@ export function TaskStatusControl({ task, compact = false }: { task: Task; compa
     );
 
   if (!task.viewer_can_update_status) return <StatusBadge status={task.status} />;
+  // Only PMs mark work completed (or reopen it); researchers move it up to In progress / Blocked.
+  if (!me.is_manager && task.status === "COMPLETED") return <StatusBadge status={task.status} />;
+  if (!me.is_manager && compact && task.status === "IN_PROGRESS") {
+    return (
+      <span className="status-check locked" title="In progress · a project manager marks it completed" aria-label="In progress">
+        <span className="half" />
+      </span>
+    );
+  }
   if (compact) {
     const done = task.status === "COMPLETED";
     return (
@@ -54,7 +65,7 @@ export function TaskStatusControl({ task, compact = false }: { task: Task; compa
       aria-label={`Status of ${task.title}`}
       onChange={(e) => change(e.target.value as TaskStatus)}
     >
-      {TASK_STATUSES.map((s) => (
+      {TASK_STATUSES.filter((s) => me.is_manager || s !== "COMPLETED").map((s) => (
         <option key={s} value={s}>
           {TASK_STATUS_LABEL[s]}
         </option>

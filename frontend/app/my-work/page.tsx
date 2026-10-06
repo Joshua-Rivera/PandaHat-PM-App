@@ -3,12 +3,14 @@
 import { useState } from "react";
 
 import type { TaskStatus } from "@/lib/api/types";
-import { useTasks } from "@/lib/queries";
+import { useMyLearningPath, useTasks } from "@/lib/queries";
+
+import { LearningProgressView } from "@/components/learning/LearningProgressView";
 
 import { useSession } from "@/components/shell/Session";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
 import { TaskList } from "@/components/tasks/TaskList";
-import { PageHeader, Tabs } from "@/components/ui/Primitives";
+import { PageHeader, SectionHeader, Tabs } from "@/components/ui/Primitives";
 import { TaskListSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import type { Task } from "@/lib/api/types";
@@ -43,7 +45,7 @@ export default function MyWorkPage() {
 
   return (
     <div className="page">
-      <PageHeader title="My Work" description="Everything assigned to you, across projects." />
+      <PageHeader title="My Work" description="Everything assigned to you, across projects, plus your learning path." />
       <Tabs label="Filter tasks by status" tabs={FILTERS.map((f) => ({ ...f, count: tasks.data ? count(f.value) : undefined }))} value={filter} onChange={setFilter} />
       <div className="card">
         {tasks.isPending ? (
@@ -56,7 +58,20 @@ export default function MyWorkPage() {
           <TaskList tasks={visible} showAssignee={false} showDescription onEdit={me.is_manager ? setEditing : undefined} />
         )}
       </div>
+      {me.is_manager ? null : <MyLearning />}
       <TaskFormDialog open={!!editing} onClose={() => setEditing(null)} task={editing} />
     </div>
+  );
+}
+
+/** The researcher's learning path, shown under their tasks. Hidden until a PM assigns one. */
+function MyLearning() {
+  const learning = useMyLearningPath();
+  if (!learning.data?.enrollment) return null;
+  return (
+    <section id="learning" className="stack-md my-learning">
+      <SectionHeader title="Learning path" />
+      <LearningProgressView progress={learning.data.enrollment} editable />
+    </section>
   );
 }

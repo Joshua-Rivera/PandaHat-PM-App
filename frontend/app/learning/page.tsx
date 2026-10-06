@@ -1,54 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { useLearningPath, useLearningPaths, useMyLearningPath } from "@/lib/queries";
+import { useLearningPath, useLearningPaths } from "@/lib/queries";
 
 import { AssignLearningPathDialog } from "@/components/learning/AssignLearningPathDialog";
 import { AddModuleDialog, CreateLearningPathDialog } from "@/components/learning/LearningPathBuilder";
-import { LearningProgressView } from "@/components/learning/LearningProgressView";
 import { useSession } from "@/components/shell/Session";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar, PageHeader, ProgressBar, SectionHeader } from "@/components/ui/Primitives";
-import { PageHeaderSkeleton, ProjectGridSkeleton, Skeleton, TaskListSkeleton } from "@/components/ui/Skeleton";
+import { PageHeaderSkeleton, ProjectGridSkeleton, TaskListSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { formatShortDate } from "@/lib/format";
 
 export default function LearningPage() {
   const { me } = useSession();
-  return me.is_manager ? <ManageLearning /> : <MyLearning />;
-}
-
-function MyLearning() {
-  const learning = useMyLearningPath();
-  return (
-    <div className="page narrow">
-      <PageHeader title="Your Learning Path" description="Work through each module in order. Finishing it lets your PM move you to the Research track." />
-      {learning.isPending ? (
-        <div className="stack-lg">
-          <div className="card stack-md">
-            <Skeleton width="45%" height={18} />
-            <Skeleton height={8} />
-          </div>
-          <div className="card">
-            <TaskListSkeleton rows={4} />
-          </div>
-        </div>
-      ) : learning.isError ? (
-        <ErrorState title="Couldn't load your learning path" error={learning.error} onRetry={() => learning.refetch()} />
-      ) : learning.data.enrollment ? (
-        <LearningProgressView progress={learning.data.enrollment} editable />
-      ) : (
-        <EmptyState
-          icon="book"
-          title="No learning path yet"
-          description="When a project manager assigns you a learning path, your modules and current task will appear here."
-          action={<Link className="btn" href="/">Back to dashboard</Link>}
-        />
-      )}
-    </div>
-  );
+  const router = useRouter();
+  useEffect(() => {
+    if (!me.is_manager) router.replace("/my-work#learning");
+  }, [me.is_manager, router]);
+  return me.is_manager ? <ManageLearning /> : null;
 }
 
 function ManageLearning() {
