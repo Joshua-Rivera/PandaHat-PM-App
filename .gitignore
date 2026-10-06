@@ -9,3 +9,7 @@ node_modules/
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
+
+# Secrets (template is secrets.env.example)
+secrets.env
+*.secrets.env
