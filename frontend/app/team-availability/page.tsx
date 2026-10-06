@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import type { Commitment, ResearchStatus, TeamMemberAvailability } from "@/lib/api/types";
+import type { Commitment, ResearchStatus } from "@/lib/api/types";
 import {
   COMMITMENT_LABEL,
   COMMITMENTS,
@@ -14,10 +14,10 @@ import {
 } from "@/lib/format";
 import { useTeamAvailability } from "@/lib/queries";
 
-import { AvailabilitySummary, formatTime } from "@/components/availability/AvailabilitySummary";
+import { AvailabilityHeatmap } from "@/components/availability/AvailabilityHeatmap";
 import { ManagerOnly } from "@/components/shell/ManagerOnly";
 import { Icon } from "@/components/ui/Icon";
-import { Avatar, Badge, MemberTags, PageHeader, StatCard } from "@/components/ui/Primitives";
+import { Avatar, Badge, MemberTags, PageHeader, SectionHeader, StatCard } from "@/components/ui/Primitives";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 
@@ -30,16 +30,6 @@ export default function TeamAvailabilityPage() {
 }
 
 const ALL = "";
-
-function hoursOn(member: TeamMemberAvailability, weekday: number): number {
-  return member.blocks
-    .filter((b) => b.weekday === weekday)
-    .reduce((sum, b) => {
-      const [sh, sm] = b.start_time.split(":").map(Number);
-      const [eh, em] = b.end_time.split(":").map(Number);
-      return sum + (eh * 60 + em - (sh * 60 + sm)) / 60;
-    }, 0);
-}
 
 function TeamAvailability() {
   const team = useTeamAvailability();
@@ -156,7 +146,6 @@ function TeamAvailability() {
                 <StatCard label="Assigned" value={formatHours(selected.assigned_hours)} hint="open tasks" />
                 <StatCard label="Days available" value={new Set(selected.blocks.map((b) => b.weekday)).size} hint="per week" />
               </div>
-              <AvailabilitySummary blocks={selected.blocks} />
             </section>
           ) : (
             <div className="stat-grid four">
@@ -174,76 +163,37 @@ function TeamAvailability() {
           {rows.length === 0 ? (
             <EmptyState icon="search" title="Nobody matches" description="Try clearing a filter." compact />
           ) : (
-            <div className="card table-card">
-              <table className="table table-stack availability-table">
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    {days.map((d) => (
-                      <th key={d}>{WEEKDAYS[d].slice(0, 3)}</th>
-                    ))}
-                    <th>Weekly</th>
-                  </tr>
-                  <tr className="coverage-row">
-                    <td className="muted small">People available</td>
-                    {days.map((d) => {
-                      const count = rows.filter((m) => m.blocks.some((b) => b.weekday === d)).length;
-                      return (
-                        <td key={d} data-label={`${WEEKDAYS[d].slice(0, 3)} coverage`}>
-                          <span className={`coverage-pill${count ? "" : " empty"}`}>{count}</span>
-                        </td>
-                      );
-                    })}
-                    <td />
-                  </tr>
-                </thead>
-                <tbody>
+            <>
+              <AvailabilityHeatmap members={rows} days={days} focusId={personId || undefined} />
+              <div className="card member-hours">
+                <SectionHeader title="Weekly hours" />
+                <ul className="member-hours-list">
                   {rows.map((m) => {
                     const short = m.weekly_capacity_hours < m.committed_hours;
+                    const pct = m.committed_hours ? Math.min(100, (m.weekly_capacity_hours / m.committed_hours) * 100) : 0;
                     return (
-                      <tr key={m.user_id}>
-                        <td data-label="Member">
-                          <button type="button" className="person-cell link-button" onClick={() => setPersonId(m.user_id)}>
-                            <Avatar name={m.display_name} />
-                            <span>
-                              <strong>{m.display_name}</strong>
-                              <MemberTags status={m.research_status} commitment={m.commitment} />
-                            </span>
-                          </button>
-                        </td>
-                        {days.map((d) => {
-                          const blocks = m.blocks.filter((b) => b.weekday === d);
-                          return (
-                            <td key={d} data-label={WEEKDAYS[d].slice(0, 3)} className="slot-cell">
-                              {blocks.length ? (
-                                <span className="slot-list" title={`${formatHours(hoursOn(m, d))} on ${WEEKDAYS[d]}`}>
-                                  {blocks.map((b) => (
-                                    <span key={b.start_time} className="slot-chip">
-                                      {formatTime(b.start_time)}–{formatTime(b.end_time)}
-                                    </span>
-                                  ))}
-                                </span>
-                              ) : (
-                                <span className="muted" aria-label="Unavailable">
-                                  —
-                                </span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        <td data-label="Weekly">
-                          <span className="weekly-hours">
-                            <strong>{formatHours(m.weekly_capacity_hours)}</strong>
-                            <span className="muted small"> / {formatHours(m.committed_hours)}</span>
+                      <li key={m.user_id} className={m.user_id === personId ? "selected" : undefined}>
+                        <button type="button" className="person-cell link-button" onClick={() => setPersonId(m.user_id === personId ? ALL : m.user_id)}>
+                          <Avatar name={m.display_name} />
+                          <span>
+                            <strong>{m.display_name}</strong>
+                            <MemberTags status={m.research_status} commitment={m.commitment} />
                           </span>
-                          {short ? <Badge tone="warning">Below commitment</Badge> : null}
-                        </td>
-                      </tr>
+                        </button>
+                        <span className="hours-meter" aria-hidden="true">
+                          <i style={{ width: `${pct}%` }} className={short ? "short" : undefined} />
+                        </span>
+                        <span className="weekly-hours">
+                          <strong>{formatHours(m.weekly_capacity_hours)}</strong>
+                          <span className="muted small"> / {formatHours(m.committed_hours)}</span>
+                          {short ? <Badge tone="warning">Below</Badge> : null}
+                        </span>
+                      </li>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </ul>
+              </div>
+            </>
           )}
         </>
       )}
