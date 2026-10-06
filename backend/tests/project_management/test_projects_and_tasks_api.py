@@ -175,3 +175,15 @@ def test_github_linked_task_source_follows_issue_url(client, pm):
     assert r.json()["source"] == "LOCAL"
     bad = client.post("/api/v1/tasks", json={"title": "x", "project_id": project["project_id"], "github_issue_url": "http://evil"}, headers=auth(pm))
     assert bad.status_code == 422
+
+
+def test_board_drop_moves_status_and_owner_in_one_patch(client, pm, researcher):
+    # What the PM board sends when a card is dragged to another lane and column at once.
+    project = _create_project(client, pm)
+    client.post(f"/api/v1/projects/{project['project_id']}/members", json={"user_id": str(researcher.user_id)}, headers=auth(pm))
+    task = _create_task(client, pm, project["project_id"])
+    url = f"/api/v1/tasks/{task['task_id']}"
+    moved = client.patch(url, json={"status": "IN_PROGRESS", "assignee_user_id": str(researcher.user_id)}, headers=auth(pm)).json()
+    assert moved["status"] == "IN_PROGRESS" and moved["assignee_user_id"] == str(researcher.user_id)
+    cleared = client.patch(url, json={"assignee_user_id": None}, headers=auth(pm)).json()
+    assert cleared["assignee_user_id"] is None and cleared["status"] == "IN_PROGRESS"

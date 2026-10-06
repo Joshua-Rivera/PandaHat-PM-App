@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import * as api from "@/lib/api/endpoints";
-import type { AvailabilityBlock, ProjectInput, TaskInput } from "@/lib/api/types";
+import type { AvailabilityBlock, ProjectInput, Task, TaskInput, TaskStatus, UserRef } from "@/lib/api/types";
 
 export const keys = {
   me: ["me"] as const,
@@ -111,3 +111,35 @@ export const useCreateAnnouncement = () => useWorkMutation(api.createAnnouncemen
 export const useApproveMember = () =>
   useWorkMutation(({ id, body }: { id: string; body: Parameters<typeof api.approveMember>[1] }) => api.approveMember(id, body));
 export const useRejectMember = () => useWorkMutation((id: string) => api.rejectMember(id));
+
+export type TaskMove = { task: Task; status?: TaskStatus; assignee?: UserRef | null };
+
+/** Board drag-and-drop: moves the card in every cached task list at once, rolls back if the server refuses. */
+export function useMoveTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ task, status, assignee }: TaskMove) =>
+      api.updateTask(task.task_id, {
+        ...(status ? { status } : {}),
+        ...(assignee !== undefined ? { assignee_user_id: assignee?.user_id ?? null } : {}),
+      } as Partial<TaskInput>),
+    onMutate: async ({ task, status, assignee }: TaskMove) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const snapshot = qc.getQueriesData<Task[]>({ queryKey: ["tasks", "list"] });
+      qc.setQueriesData<Task[]>({ queryKey: ["tasks", "list"] }, (list) =>
+        list?.map((t) =>
+          t.task_id !== task.task_id
+            ? t
+            : {
+                ...t,
+                ...(status ? { status } : {}),
+                ...(assignee !== undefined ? { assignee, assignee_user_id: assignee?.user_id ?? null } : {}),
+              },
+        ),
+      );
+      return { snapshot };
+    },
+    onError: (_e, _v, ctx) => ctx?.snapshot.forEach(([key, data]) => qc.setQueryData(key, data)),
+    onSettled: () => invalidateWork(qc),
+  });
+}
