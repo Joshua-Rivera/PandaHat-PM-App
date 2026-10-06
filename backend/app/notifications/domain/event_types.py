@@ -1,0 +1,52 @@
+from enum import StrEnum
+
+
+class EventType(StrEnum):
+    """Every notification event PandaHat can produce.
+
+    StrEnum values are stored verbatim in `notifications.event_type`, and the
+    migration's CHECK constraint is generated from this list, so this enum is
+    the single source of truth.
+    """
+
+    TASK_ASSIGNED = "TASK_ASSIGNED"
+    TASK_UNASSIGNED = "TASK_UNASSIGNED"
+    DEADLINE_APPROACHING = "DEADLINE_APPROACHING"
+    DEADLINE_CHANGED = "DEADLINE_CHANGED"
+    LEARNING_TASK_ASSIGNED = "LEARNING_TASK_ASSIGNED"
+    LEARNING_MODULE_COMPLETED = "LEARNING_MODULE_COMPLETED"
+    LEARNING_PATH_COMPLETED = "LEARNING_PATH_COMPLETED"
+    RESEARCH_READY = "RESEARCH_READY"
+    PROJECT_ASSIGNED = "PROJECT_ASSIGNED"
+    PROJECT_REMOVED = "PROJECT_REMOVED"
+    EXPERIMENT_ASSIGNED = "EXPERIMENT_ASSIGNED"
+    EXPERIMENT_STATUS_CHANGED = "EXPERIMENT_STATUS_CHANGED"
+    RESEARCH_MILESTONE_REACHED = "RESEARCH_MILESTONE_REACHED"
+    PM_ANNOUNCEMENT = "PM_ANNOUNCEMENT"
+    WEEKLY_RESEARCH_SUMMARY = "WEEKLY_RESEARCH_SUMMARY"
+    GITHUB_ISSUE_ASSIGNED = "GITHUB_ISSUE_ASSIGNED"
+    GITHUB_ISSUE_CLOSED = "GITHUB_ISSUE_CLOSED"
+    GITHUB_PR_OPENED = "GITHUB_PR_OPENED"
+    GITHUB_PR_MERGED = "GITHUB_PR_MERGED"
+    GITHUB_MILESTONE_CHANGED = "GITHUB_MILESTONE_CHANGED"
+
+
+class Priority(StrEnum):
+    LOW = "LOW"
+    NORMAL = "NORMAL"
+    HIGH = "HIGH"
+    URGENT = "URGENT"
+
+
+class Channel(StrEnum):
+    IN_APP = "IN_APP"
+    EMAIL = "EMAIL"
+
+
+class ResourceType(StrEnum):
+    TASK = "task"
+    PROJECT = "project"
+    EXPERIMENT = "experiment"
+    LEARNING_TASK = "learning_task"
+    GITHUB_ISSUE = "github_issue"
+    GITHUB_PULL_REQUEST = "github_pull_request"

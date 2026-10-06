@@ -1,0 +1,24 @@
+# Firebase App Hosting settings for the Next.js frontend.
+# The Firebase web config is public (it identifies the project; it isn't a secret).
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_AUTH_MODE
+    value: firebase
+  # Cloud Run URL of the FastAPI service, e.g. https://pandahat-api-xxxxx-uc.a.run.app
+  # Next.js proxies /api/* to it, so the browser only ever talks to this site.
+  - variable: BACKEND_URL
+    value: https://REPLACE-WITH-CLOUD-RUN-URL
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: REPLACE
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: REPLACE.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: REPLACE
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: REPLACE
