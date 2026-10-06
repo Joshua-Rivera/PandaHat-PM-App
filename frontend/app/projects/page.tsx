@@ -4,11 +4,12 @@ import { useState } from "react";
 
 import { useProjects } from "@/lib/queries";
 
+import { PmBoard } from "@/components/projects/PmBoard";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { useSession } from "@/components/shell/Session";
 import { Icon } from "@/components/ui/Icon";
-import { PageHeader } from "@/components/ui/Primitives";
+import { PageHeader, Tabs } from "@/components/ui/Primitives";
 import { ProjectGridSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 
@@ -16,6 +17,7 @@ export default function ProjectsPage() {
   const { me } = useSession();
   const projects = useProjects();
   const [creating, setCreating] = useState(false);
+  const [view, setView] = useState<"projects" | "board">("projects");
 
   return (
     <div className="page">
@@ -30,7 +32,20 @@ export default function ProjectsPage() {
           ) : null
         }
       />
-      {projects.isPending ? (
+      {me.is_manager ? (
+        <Tabs
+          label="Projects view"
+          tabs={[
+            { value: "projects", label: "Projects" },
+            { value: "board", label: "Board" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      ) : null}
+      {me.is_manager && view === "board" ? (
+        <PmBoard />
+      ) : projects.isPending ? (
         <ProjectGridSkeleton count={4} />
       ) : projects.isError ? (
         <ErrorState title="Couldn't load projects" error={projects.error} onRetry={() => projects.refetch()} />
